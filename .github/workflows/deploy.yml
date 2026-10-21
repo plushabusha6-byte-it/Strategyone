@@ -1,0 +1,49 @@
+name: Deploy Strategy Game to GitHub Pages
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare build folder and unpack ZIP if present
+        run: |
+          mkdir -p build_output
+          if ls *.zip 1> /dev/null 2>&1; then
+            echo "Found ZIP archive, unpacking into build_output..."
+            unzip -o "*.zip" -d build_output/
+          fi
+          cp -f *.html *.css *.js build_output/ 2>/dev/null || true
+
+      - name: Setup Pages with Auto-Enablement
+        uses: actions/configure-pages@v4
+        with:
+          enablement: true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './build_output'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        
